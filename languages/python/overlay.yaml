@@ -12,3 +12,10 @@ actions:
   - target: $.servers[0].variables.baseUrl
     update:
       default: https://app.phasetwo.io/auth
+
+  # Generated files stamp info.version into every header, so each API version bump
+  # would touch every file. The real version is recorded once, in sdk-generator.json
+  # (generate.sh reads it from the spec before overlays are applied).
+  - target: $.info
+    update:
+      version: see sdk-generator.json

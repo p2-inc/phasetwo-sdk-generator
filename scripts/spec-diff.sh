@@ -3,10 +3,14 @@
 #
 #   scripts/spec-diff.sh <sdk-dir> <out-dir>
 #
-# Run after generate.sh. Compares the spec commit recorded in the SDK's
-# sdk-generator.json on its default branch (i.e. before this regeneration) with the
-# spec in .work/spec/openapi.yaml. Writes <out-dir>/changelog.md and
-# <out-dir>/semver (minor if oasdiff finds breaking changes, otherwise patch).
+# Run after generate.sh. Compares the SDK's sdk-generator.json on its default branch
+# (i.e. before this regeneration) with the regenerated one, and the old spec with
+# .work/spec/openapi.yaml. Writes:
+#   <out-dir>/changelog.md  oasdiff changelog
+#   <out-dir>/semver        minor if the API version's major.minor changed (the SDK
+#                           releases <major>.<minor>.0), otherwise patch
+#   <out-dir>/release       the version line for the PR body
+#   <out-dir>/breaking      "true" if the change breaks SDK users
 . "$(dirname "$0")/lib.sh"
 
 [ $# -eq 2 ] || die "usage: $0 <sdk-dir> <out-dir>"
@@ -18,13 +22,24 @@ oasdiff() {
   docker run --rm -v "$WORK/diff:/specs" "tufin/oasdiff:$OASDIFF_VERSION" "$@"
 }
 
-old_sha=$(git -C "$sdk" show HEAD:sdk-generator.json 2>/dev/null \
-  | sed -n 's/.*"sha": *"\([^"]*\)".*/\1/p' || true)
+json_field() { sed -n "s/.*\"$1\": *\"\([^\"]*\)\".*/\\1/p"; }
+old_json=$(git -C "$sdk" show HEAD:sdk-generator.json 2>/dev/null || true)
+old_sha=$(json_field sha <<< "$old_json")
+old_api=$(json_field apiVersion <<< "$old_json")
+new_api=$(json_field apiVersion < "$sdk/sdk-generator.json")
 cp "$WORK/spec/openapi.yaml" "$WORK/diff/new.yaml"
 
+if [ "${old_api%.*}" != "${new_api%.*}" ]; then
+  echo minor > "$out/semver"
+  echo "Releases **${new_api%.*}.0** (API version ${old_api:-none} → $new_api)." > "$out/release"
+else
+  echo patch > "$out/semver"
+  echo "Releases the next **${new_api%.*}.x** patch (API version unchanged at $new_api)." > "$out/release"
+fi
+
+echo false > "$out/breaking"
 if [[ ! $old_sha =~ ^[0-9a-f]{40}$ ]]; then
   echo "No previous spec commit recorded in sdk-generator.json, so there is no spec diff." > "$out/changelog.md"
-  echo minor > "$out/semver"
   exit 0
 fi
 
@@ -39,8 +54,6 @@ curl -fsSL -o "$WORK/diff/old.yaml" "https://raw.githubusercontent.com/$SPEC_REP
 # or renaming one breaks SDK users even though the HTTP API is unchanged).
 if ! oasdiff breaking /specs/old.yaml /specs/new.yaml --fail-on ERR > /dev/null \
   || grep -Eq "API tag \`[^\`]+\` removed" "$out/changelog.md"; then
-  echo minor > "$out/semver"
-else
-  echo patch > "$out/semver"
+  echo true > "$out/breaking"
 fi
-log "spec diff: $(cat "$out/semver") ($old_sha -> new)"
+log "spec diff: $(cat "$out/semver"), breaking=$(cat "$out/breaking") ($old_api -> $new_api)"

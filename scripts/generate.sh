@@ -21,6 +21,10 @@ langdir=$ROOT/languages/$lang
 # shellcheck source=/dev/null
 . "$WORK/spec/source.env"
 
+API_VERSION=$(spec_api_version "$WORK/spec/openapi.yaml")
+[[ $API_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+  || die "the spec's info.version is '$API_VERSION'; it must be a semver version (e.g. 0.2.0), since SDK versions follow it"
+
 build=$WORK/build/$lang
 rm -rf "$build" && mkdir -p "$build"
 
@@ -77,6 +81,7 @@ cat > "$sdk/sdk-generator.json" <<JSON
     "path": "$SPEC_PATH",
     "sha": "$SPEC_SHA"
   },
+  "apiVersion": "$API_VERSION",
   "openapiGenerator": "$OPENAPI_GENERATOR_VERSION",
   "generatedPaths": "$GENERATED_PATHS"
 }

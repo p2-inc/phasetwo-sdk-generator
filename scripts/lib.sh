@@ -60,3 +60,12 @@ in_container() { # absolute host path under $ROOT -> path inside the container
     *) die "$1 is not under $ROOT" ;;
   esac
 }
+
+# The API version from a spec's info.version, e.g. 0.2.0. The SDKs are released as
+# <major>.<minor>.<patch> of it: every SDK release 0.X.* implements API 0.X.
+spec_api_version() { # <openapi.yaml>
+  awk '/^info:/ { i = 1; next }
+       i && /^[^ #]/ { exit }
+       i && /^  version:/ { sub(/^  version:[ ]*/, ""); gsub(/["'"'"' ]/, ""); print; exit }' "$1"
+}
+

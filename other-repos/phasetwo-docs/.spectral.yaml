@@ -3,10 +3,8 @@
 extends: [["spectral:oas", "off"]]
 rules:
   # SDK method names come from operationIds; without one the generator invents
-  # names like realmUsersUserIdOrgsOrgIdRolesPut. Warn for now: four operations under
-  # /{realm}/users/{userId}/orgs still lack one (phasetwo-sdk-generator names them in
-  # overlays/common.yaml). Make this an error once they're added here.
-  operation-operationId: warn
+  # names like realmUsersUserIdOrgsOrgIdRolesPut.
+  operation-operationId: error
   operation-operationId-unique: error
   operation-operationId-valid-in-url: error
 

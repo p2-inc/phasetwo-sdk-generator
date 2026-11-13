@@ -121,7 +121,7 @@ jobs:
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
         with:
           node-version: "24"
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
       - uses: actions/setup-go@v6
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip

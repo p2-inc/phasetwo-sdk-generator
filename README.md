@@ -61,6 +61,20 @@ When the generator's output isn't what we want, don't fix it in the SDK. Use the
 4. **Names and options** → `languages/<language>/config.yaml`.
 5. **Anything else** → a patch in `languages/<language>/patches/`, made against the formatted output and applied with `git apply`. Generation fails if a patch stops applying. Keep this empty if you can.
 
+### README examples
+
+README code blocks are copied from example files that each SDK's CI compiles and runs against Phase Two Keycloak, so they can't go stale. In the README:
+
+````
+<!-- phasetwo:snippet quickstart examples/quickstart.py -->
+```python
+(filled in by the generator)
+```
+<!-- /phasetwo:snippet -->
+````
+
+and in the example file, the lines between `# snippet:start quickstart` and `# snippet:end quickstart` (any comment style). [`scripts/readme-snippets.sh`](scripts/readme-snippets.sh) runs as part of `generate.sh`, so the drift check fails a PR whose README doesn't match its examples. Edit the example, then run `scripts/readme-snippets.sh <sdk-dir>`.
+
 Hand-written code that breaks because the generated API changed (a new parameter, a renamed class) is fixed in the SDK repo, on the bot's PR branch.
 
 ## Running locally

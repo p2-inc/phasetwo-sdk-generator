@@ -6,7 +6,7 @@
 # Steps: fetch spec -> apply overlays -> openapi-generator (with template overrides)
 # -> sync into the SDK's generated-only paths -> format -> apply patches
 # -> write sdk-generator.json. Nothing outside the language's GENERATED_PATHS is
-# touched except sdk-generator.json.
+# touched except sdk-generator.json and README snippet blocks (readme-snippets.sh).
 . "$(dirname "$0")/lib.sh"
 
 [ $# -eq 2 ] || die "usage: $0 <language> <sdk-dir>"
@@ -72,7 +72,10 @@ for patch in "$langdir"/patches/*.patch; do
     || die "patch ${patch#"$ROOT"/} no longer applies; update or remove it"
 done
 
-# 5. Record what this was generated from.
+# 5. README code blocks from the SDK's tested example files.
+"$ROOT/scripts/readme-snippets.sh" "$sdk"
+
+# 6. Record what this was generated from.
 cat > "$sdk/sdk-generator.json" <<JSON
 {
   "comment": "Written by p2-inc/phasetwo-sdk-generator. Do not edit by hand.",

@@ -57,7 +57,7 @@ Org settings → Developer settings → GitHub Apps → New GitHub App, e.g. **p
 - Webhook: off.
 - Repository permissions: **Contents: read and write**, **Pull requests: read and write**, Metadata: read (default). Nothing else; the bot never edits workflow files.
 - Install it on the `p2-inc` org for these repositories only: `phasetwo-docs`, `phasetwo-sdk-generator`, `phasetwo-java`, `phasetwo-js`, `phasetwo-python`, `phasetwo-go` (create the last two repos in step 2 first, or add them to the installation afterwards).
-- Generate a private key.
+- Generate a private key: the App's settings → **Credentials** → **Key pairs** → **New key** (it downloads a `.pem`).
 - Org settings → Secrets and variables → Actions:
   - variable `SDK_BOT_APP_ID` = the App ID
   - secret `SDK_BOT_PRIVATE_KEY` = the private key (`.pem` contents)
@@ -89,7 +89,7 @@ Hold off on `phasetwo-go` until step 5.
 ## 3. Registries
 
 - **npm:** on npmjs.com, `@p2-inc/js-sdk` → Settings → Trusted publishing → GitHub Actions: org `p2-inc`, repo `phasetwo-js`, workflow `release.yml`. (Needs npm ≥ 11.5 in the workflow; Node 24 has it.)
-- **PyPI:** pypi.org → Your projects → Publishing → Add a pending publisher: project `phasetwo-sdk`, owner `p2-inc`, repo `phasetwo-python`, workflow `release.yml`, environment `pypi`. This reserves the name until the first upload. Then in `phasetwo-python` create the `pypi` environment (Settings → Environments). Optionally require a reviewer on it.
+- **PyPI:** pypi.org → Your projects → Publishing → Add a pending publisher: project `phasetwo-sdk`, owner `p2-inc`, repo `phasetwo-python`, workflow `release.yml`, environment `pypi`. A pending publisher does **not** reserve the name; it's only claimed by the first upload, so release soon after. Then in `phasetwo-python` create the `pypi` environment (Settings → Environments). Optionally require a reviewer on it.
 - **Maven Central:** nothing new; `phasetwo-java` already releases (0.1.16 is on Central).
 - **Go:** nothing; releases are git tags, and pkg.go.dev picks them up.
 

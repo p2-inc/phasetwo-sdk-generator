@@ -132,6 +132,20 @@ jobs:
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
         run: scripts/generate.sh ${{ matrix.language }} .work/sdks/${{ matrix.language }}
 
+      # If the only change is the spec commit recorded in sdk-generator.json (e.g. a
+      # docs-only spec edit that doesn't affect this SDK), don't open a PR: merging it
+      # would release a version with no changes. The recorded commit still regenerates
+      # identical code, so the drift check stays green.
+      - name: Skip if nothing but the recorded spec commit changed
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+        working-directory: .work/sdks/${{ matrix.language }}
+        run: |
+          if [ -z "$(git status --porcelain -- . ':!sdk-generator.json')" ] \
+            && git diff --quiet -I '"sha":' -- sdk-generator.json; then
+            echo "No generated changes; not opening a PR."
+            git checkout -- sdk-generator.json
+          fi
+
       - name: Describe spec changes
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
         id: diff

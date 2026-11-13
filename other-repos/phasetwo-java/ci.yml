@@ -1,0 +1,24 @@
+# Copy to p2-inc/phasetwo-java/.github/workflows/ci.yml. The repo only has a release
+# workflow, so PRs (including the generator's) aren't built or tested today.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      # verify runs the Testcontainers integration test against Phase Two Keycloak.
+      - run: mvn -B verify

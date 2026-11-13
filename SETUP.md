@@ -74,7 +74,7 @@ gh repo create p2-inc/phasetwo-go --public --description "Phase Two API Go SDK"
 
 `phasetwo-sdk-generator` should be public: the SDK repos' drift check clones it, and the SDK READMEs link to it. (If it must be private, give the drift workflow a token that can read it.)
 
-> Status: `p2-inc/phasetwo-sdk-generator` has been created and pushed, with Actions disabled. `phasetwo-go` is still to do.
+> Status: `p2-inc/phasetwo-sdk-generator` and `p2-inc/phasetwo-go` have been created and pushed, both with Actions disabled. `phasetwo-go`'s `sdk-generator.json` still points at the unmerged docs commit; step 5 updates it.
 
 Push the generator, but **don't enable Actions yet** (Settings → Actions → Disable), so `regenerate.yml` can't open PRs before the SDK repos are ready:
 
@@ -121,7 +121,7 @@ For each SDK, add its workflows from `other-repos/` on the same branch, then pus
 
 | Repo | Add / replace |
 |---|---|
-| phasetwo-java | `other-repos/sdks/openapi-drift.yml` (`LANGUAGE: java`); replace `.github/workflows/release.yml` with `other-repos/phasetwo-java/release.yml` |
+| phasetwo-java | `other-repos/sdks/openapi-drift.yml` (`LANGUAGE: java`); `other-repos/phasetwo-java/ci.yml` (the repo has no PR CI); replace `.github/workflows/release.yml` with `other-repos/phasetwo-java/release.yml` |
 | phasetwo-js | `openapi-drift.yml` (`LANGUAGE: typescript`); `other-repos/phasetwo-js/release.yml`; `other-repos/phasetwo-js/ci.yml` (the repo has no CI) |
 | phasetwo-python | `openapi-drift.yml` (`LANGUAGE: python`); `other-repos/phasetwo-python/release.yml`; `other-repos/phasetwo-python/ci.yml` |
 | phasetwo-go | already has `ci.yml`, `release.yml`, `openapi-drift.yml` |
@@ -132,8 +132,8 @@ git push -u origin regenerate-openapi-7.27
 gh pr create --fill --label semver:minor
 
 cd ../go
-git remote add origin git@github.com:p2-inc/phasetwo-go.git
-git push -u origin main   # first push; its release workflow tags v0.1.0
+git push              # main is already on GitHub; this pushes the sdk-generator.json update
+# then enable Actions on phasetwo-go: the next push to main tags v0.1.0
 ```
 
 Label each PR `semver:minor`: they all contain breaking changes. Merging them should release:
@@ -163,6 +163,9 @@ In `phasetwo-docs`, add `other-repos/phasetwo-docs/openapi-sdks.yml` as `.github
 From now on, every merge to `main` that changes `openapi.yaml` dispatches `regenerate.yml`, and the SDK PRs appear within a few minutes.
 
 ## 8. README banners and docs
+
+The banner changes are on a local `shared-github-actions` branch, `sdk-banners` (in `.work/`): PyPI and Go Reference badge support, a PyPI badge for phasetwo-python, and phasetwo-go added to the sync. Push it and merge it once the SDK repos are live. The full README plan is in `sdk-automation-plan/README-PLAN.md`.
+
 
 - In `p2-inc/shared-github-actions`, `readme/repos.json`:
   - add `p2-inc/phasetwo-go` (`kind: general`, `license: Apache-2.0`, `docs: https://phasetwo.io/docs/api/sdks/`);

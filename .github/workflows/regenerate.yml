@@ -116,7 +116,7 @@ jobs:
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
       - uses: actions/setup-node@v7
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
         with:

@@ -123,7 +123,7 @@ jobs:
           node-version: "24"
       - uses: astral-sh/setup-uv@v10.3.3
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
         with:
           go-version: stable

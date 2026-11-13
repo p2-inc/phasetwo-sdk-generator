@@ -31,6 +31,15 @@ SDK repo: CI builds/tests the PR; a person reviews, fixes hand-written code if
 needed (on the same branch), merges, and the SDK's release workflow publishes.
 ```
 
+### Versioning
+
+All four SDKs share one version: the Phase Two API version in the spec's `info.version` (semver).
+
+- Every SDK release `X.Y.*` implements API `X.Y`. Java, TypeScript, Python and Go `0.2.x` all speak the same API.
+- An API change needs a minor bump of `info.version` in the phasetwo-docs PR (CI enforces it). The regenerated SDKs then release `X.Y.0`.
+- A fix to one SDK's hand-written code releases the next patch (`X.Y.1`, ...) of that SDK only.
+- `generate.sh` records the API version as `apiVersion` in each SDK's `sdk-generator.json`. Each SDK's release workflow takes `X.Y` from it, and the patch from that repo's `vX.Y.*` tags.
+
 ### Generated vs hand-written code
 
 Each SDK keeps generated code in its own directory. Never edit it by hand: the drift check ([`other-repos/sdks/openapi-drift.yml`](other-repos/sdks/openapi-drift.yml)) regenerates it and fails the PR if it differs.

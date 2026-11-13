@@ -31,7 +31,7 @@ SDK repos                                     ▼
   a maintainer reviews; if the hand-written layer broke, pushes a fix to the PR branch
   merge to main → release.yml publishes:
     Java → Maven Central   TypeScript → npm   Python → PyPI   Go → git tag (pkg.go.dev)
-    version: minor bump if the PR has semver:minor, otherwise patch
+    version: X.Y from the spec's info.version (shared by all SDKs), next patch per repo
 ```
 
 The same `regenerate.yml` also runs when generator inputs change on `main` here (overlays, templates, configs, `versions.env`, e.g. a Renovate bump of openapi-generator), weekly as a safety net, and manually (Actions → regenerate → Run workflow, optionally for one language or spec ref).
@@ -133,17 +133,17 @@ gh pr create --fill --label semver:minor
 
 cd ../go
 git push              # main is already on GitHub; this pushes the sdk-generator.json update
-# then enable Actions on phasetwo-go: the next push to main tags v0.1.0
+# then enable Actions on phasetwo-go: the next push to main tags v0.2.0
 ```
 
-Label each PR `semver:minor`: they all contain breaking changes. Merging them should release:
+All four line up on the API version from the spec (`info.version` 0.2.0, in #530). Merging should release:
 
 | SDK | Release |
 |---|---|
-| Java | 0.2.0 (the Maven release action bumps the minor from 0.1.17-SNAPSHOT) |
-| TypeScript | 0.1.0 (npm is at 0.0.11) |
-| Python | 0.3.0 (first PyPI release) |
-| Go | v0.1.0 |
+| Java | 0.2.0 |
+| TypeScript | 0.2.0 (npm is at 0.0.11) |
+| Python | 0.2.0 (first PyPI release) |
+| Go | v0.2.0 |
 
 Then, in each SDK repo, Settings → Branches → protect `main` and require the CI and `openapi-drift` checks.
 
@@ -179,7 +179,7 @@ Make a harmless spec change, e.g. reword one operation's `description` in `opena
 
 1. The docs PR gets a changelog comment, with no breaking warning.
 2. After merge, `regenerate` runs four jobs, and each SDK gets a "Regenerate from phasetwo-docs@…" PR labelled `semver:patch` with green checks.
-3. Merging one releases a patch version.
+3. Merging one releases the next patch of the current API version. A spec PR that changes the API must bump `info.version`'s minor, and then every SDK releases X.Y.0.
 
 ## Day-to-day
 

@@ -10,7 +10,7 @@ mkdir -p "$WORK"
 # shellcheck source=../sdks.env
 . "$ROOT/sdks.env"
 
-LANGUAGES="java typescript python"
+LANGUAGES="java typescript python go"
 
 log() { printf '\033[1m==> %s\033[0m\n' "$*" >&2; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -27,6 +27,7 @@ sdk_repo_for() { # <lang> -> owner/repo
     java) echo "$JAVA_REPO" ;;
     typescript) echo "$TYPESCRIPT_REPO" ;;
     python) echo "$PYTHON_REPO" ;;
+    go) echo "$GO_REPO" ;;
   esac
 }
 

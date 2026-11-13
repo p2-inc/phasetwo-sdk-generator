@@ -1,0 +1,13 @@
+# oapi-codegen config for the Go SDK (https://github.com/oapi-codegen/oapi-codegen).
+# Same generator as terraform-provider-phasetwo uses for the Management API.
+# The output path is passed on the command line by hooks.sh.
+package: openapi
+generate:
+  models: true
+  # Client is the raw net/http client; ClientWithResponses also decodes each
+  # documented response into a typed JSONxxx field.
+  client: true
+output-options:
+  # Keep every schema, including ones not referenced by an operation, so models stay
+  # available to callers (e.g. for webhook payloads).
+  skip-prune: true

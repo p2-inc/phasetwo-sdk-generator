@@ -28,7 +28,7 @@ on:
   workflow_dispatch:
     inputs:
       language:
-        description: "java, typescript, python, or all"
+        description: "java, typescript, python, go, or all"
         default: all
       spec_ref:
         description: "phasetwo-docs commit or branch (default: main)"
@@ -54,6 +54,8 @@ jobs:
             repo: phasetwo-js
           - language: python
             repo: phasetwo-python
+          - language: go
+            repo: phasetwo-go
     env:
       BRANCH: bot/openapi-update
       # A dispatch carries the spec commit; otherwise use the input or main.
@@ -121,6 +123,10 @@ jobs:
           node-version: "24"
       - uses: astral-sh/setup-uv@v10
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+      - uses: actions/setup-go@v6
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+        with:
+          go-version: stable
 
       - name: Generate
         if: steps.wanted.outputs.run && !steps.guard.outputs.skip

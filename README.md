@@ -7,8 +7,9 @@ Generates the Phase Two Admin API SDKs from the [OpenAPI spec](https://github.co
 | Java | [phasetwo-java](https://github.com/p2-inc/phasetwo-java) | `io.phasetwo:phasetwo-admin-client` | `jaxrs-spec` (interfaces used as RESTEasy proxies via the Keycloak admin client) |
 | TypeScript | [phasetwo-js](https://github.com/p2-inc/phasetwo-js) | `@p2-inc/js-sdk` | `typescript-fetch` |
 | Python | [phasetwo-python](https://github.com/p2-inc/phasetwo-python) | `phasetwo-sdk` (import `phasetwo`) | `python` (pydantic v2) |
+| Go | [phasetwo-go](https://github.com/p2-inc/phasetwo-go) | `github.com/p2-inc/phasetwo-go` | [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) |
 
-All three use [OpenAPI Generator](https://openapi-generator.tech), version pinned in [`versions.env`](versions.env).
+Java, TypeScript and Python use [OpenAPI Generator](https://openapi-generator.tech). Go uses oapi-codegen, which produces more idiomatic Go and is what terraform-provider-phasetwo already uses. Versions are pinned in [`versions.env`](versions.env); setting up the automation is described in [SETUP.md](SETUP.md).
 
 ## How it works
 
@@ -19,8 +20,9 @@ phasetwo-docs: openapi.yaml changes on main
          1. fetch the spec at a commit
          2. apply overlays/common.yaml, then languages/<language>/overlay.yaml
          3. openapi-generator with languages/<language>/config.yaml and templates/
+            (or the language's own generator: run_generator in hooks.sh, e.g. oapi-codegen)
          4. sync into the SDK's generated-only paths (everything else is untouched)
-         5. format (google-java-format, prettier, ruff)
+         5. format (google-java-format, prettier, ruff, gofmt)
          6. apply languages/<language>/patches/*.patch
          7. write sdk-generator.json (spec commit, generator version)
        scripts/spec-diff.sh: oasdiff changelog + semver label
@@ -38,6 +40,7 @@ Each SDK keeps generated code in its own directory. Never edit it by hand: the d
 | Java | `src/gen/java/io/phasetwo/client/openapi/{api,model}`, `RestResourceRoot.java`, `src/main/openapi/openapi.yaml` | `src/main` (`PhaseTwo`, `*Resource` wrappers), `pom.xml`, README |
 | TypeScript | `src/openapi/` | `src/index.ts` (re-exports `./openapi`), `package.json`, README |
 | Python | `phasetwo/openapi/` | `phasetwo/__init__.py` (re-exports `phasetwo.openapi`), `pyproject.toml`, README |
+| Go | `openapi/` | root `phasetwo` package (`New`, `IDFromLocation`, `Check`), `go.mod`, README |
 
 ### Where a change goes
 
@@ -53,11 +56,11 @@ Hand-written code that breaks because the generated API changed (a new parameter
 
 ## Running locally
 
-Needs Docker, Java 21+, Node, [uv](https://docs.astral.sh/uv/), `rsync`, `git`, `curl`.
+Needs Docker, Java 21+, Node, [uv](https://docs.astral.sh/uv/), Go 1.26+, `rsync`, `git`, `curl`.
 
 ```sh
 make checkout            # clone the SDK repos into .work/sdks/<language>
-make all                 # regenerate all three from phasetwo-docs main
+make all                 # regenerate every SDK from phasetwo-docs main
 make java                # or one at a time
 make build               # build/test every SDK checkout (Java runs Testcontainers)
 make drift               # confirm the checkouts match what the generator produces
@@ -83,8 +86,10 @@ After merging, `regenerate.yml` opens the SDK PRs.
 
 ## Setup
 
+Step-by-step instructions are in [SETUP.md](SETUP.md). In short:
+
 **This repo**
-- A GitHub App (e.g. "phasetwo-sdk-bot") installed on `phasetwo-java`, `phasetwo-js`, `phasetwo-python` and this repo, with *Contents* and *Pull requests* read/write.
+- A GitHub App (e.g. "phasetwo-sdk-bot") installed on `phasetwo-java`, `phasetwo-js`, `phasetwo-python`, `phasetwo-go` and this repo, with *Contents* and *Pull requests* read/write.
 - `vars.SDK_BOT_APP_ID` and `secrets.SDK_BOT_PRIVATE_KEY` for that App.
 - Renovate enabled.
 
@@ -104,6 +109,7 @@ languages/<language>/
   templates/                 template overrides (only the files we change)
   patches/                   last-resort patches (ideally empty)
   hooks.sh                   generator name, generated paths, sync/format/build
+                             (and run_generator for a non-openapi-generator tool)
 scripts/                     generate, check-drift, spec-diff, build, checkout, fetch-spec
 other-repos/                 workflows to install in phasetwo-docs and the SDK repos
 .github/workflows/           regenerate (open SDK PRs), ci (test generator changes)

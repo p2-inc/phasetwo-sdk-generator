@@ -35,6 +35,8 @@ jobs:
             repo: phasetwo-js
           - language: python
             repo: phasetwo-python
+          - language: go
+            repo: phasetwo-go
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
@@ -50,6 +52,9 @@ jobs:
         with:
           node-version: "24"
       - uses: astral-sh/setup-uv@v10
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
       - name: Generate
         run: scripts/generate.sh ${{ matrix.language }} .work/sdks/${{ matrix.language }}
       - name: Show what changed in the SDK

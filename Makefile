@@ -1,12 +1,12 @@
 # Local entry points. CI calls the same scripts.
 SDK_DIR ?= .work/sdks
-LANGS := java typescript python
+LANGS := java typescript python go
 
 .PHONY: help checkout all $(LANGS) drift build
 
 help:
 	@echo "make checkout            clone SDK repos into $(SDK_DIR)/<language>"
-	@echo "make java|typescript|python   regenerate one SDK in $(SDK_DIR)/<language>"
+	@echo "make java|typescript|python|go   regenerate one SDK in $(SDK_DIR)/<language>"
 	@echo "make all                 regenerate all SDKs"
 	@echo "make build               build/test every SDK checkout"
 	@echo "make drift               check every SDK checkout for hand edits to generated code"

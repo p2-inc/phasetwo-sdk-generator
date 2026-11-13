@@ -35,17 +35,24 @@ for overlay in "$ROOT/overlays/common.yaml" "$langdir/overlay.yaml"; do
   mv "$build/openapi.next.yaml" "$build/openapi.yaml"
 done
 
-# 2. Generate. openapi-generator validates the spec and fails on errors.
-log "openapi-generator $OPENAPI_GENERATOR_VERSION ($GENERATOR_NAME)"
-args=(generate -g "$GENERATOR_NAME"
-  -i "$(in_container "$build/openapi.yaml")"
-  -o "$(in_container "$build/out")"
-  -c "$(in_container "$langdir/config.yaml")")
-if [ -n "$(find "$langdir/templates" -name '*.mustache' 2>/dev/null)" ]; then
-  args+=(-t "$(in_container "$langdir/templates")")
+# 2. Generate. A language can bring its own generator by defining run_generator in
+#    hooks.sh; otherwise openapi-generator runs (it validates the spec and fails on errors).
+if declare -F run_generator > /dev/null; then
+  log "generator for $lang"
+  run_generator "$build/openapi.yaml" "$build/out" "$langdir" > "$build/generator.log" 2>&1 \
+    || { tail -40 "$build/generator.log" >&2; die "generator failed (log: $build/generator.log)"; }
+else
+  log "openapi-generator $OPENAPI_GENERATOR_VERSION ($GENERATOR_NAME)"
+  args=(generate -g "$GENERATOR_NAME"
+    -i "$(in_container "$build/openapi.yaml")"
+    -o "$(in_container "$build/out")"
+    -c "$(in_container "$langdir/config.yaml")")
+  if [ -n "$(find "$langdir/templates" -name '*.mustache' 2>/dev/null)" ]; then
+    args+=(-t "$(in_container "$langdir/templates")")
+  fi
+  openapi_generator "${args[@]}" > "$build/generator.log" 2>&1 \
+    || { tail -40 "$build/generator.log" >&2; die "openapi-generator failed (log: $build/generator.log)"; }
 fi
-openapi_generator "${args[@]}" > "$build/generator.log" 2>&1 \
-  || { tail -40 "$build/generator.log" >&2; die "openapi-generator failed (log: $build/generator.log)"; }
 
 # 3. Sync into the SDK and format.
 log "sync -> $sdk ($GENERATED_PATHS)"

@@ -44,7 +44,7 @@ The same `regenerate.yml` also runs when generator inputs change on `main` here 
 
   | Where | Branch | What |
   |---|---|---|
-  | `.work/phasetwo-docs` | `openapi-sdk-tags` | one tag per operation, "Organization Invitations", tag descriptions, the four missing operationIds (+ page renames and redirects) |
+  | `.work/phasetwo-docs` | `openapi-sdk-tags` | one tag per operation, "Organization Invitations", tag descriptions, the four missing operationIds (+ page renames and redirects), `format: int64` on integer timestamps |
   | `.work/sdks/java` | `regenerate-openapi-7.27` | regenerated with 7.27, wrapper fixes, testcontainers bump |
   | `.work/sdks/typescript` | `regenerate-openapi-7.27` | regenerated into `src/openapi`, Account API dropped, TS 5, 0.1.0 |
   | `.work/sdks/python` | `regenerate-openapi-7.27` | pydantic generator, `phasetwo-sdk` packaging |
@@ -73,6 +73,8 @@ gh repo create p2-inc/phasetwo-go --public --description "Phase Two API Go SDK"
 ```
 
 `phasetwo-sdk-generator` should be public: the SDK repos' drift check clones it, and the SDK READMEs link to it. (If it must be private, give the drift workflow a token that can read it.)
+
+> Status: `p2-inc/phasetwo-sdk-generator` has been created and pushed, with Actions disabled. `phasetwo-go` is still to do.
 
 Push the generator, but **don't enable Actions yet** (Settings → Actions → Disable), so `regenerate.yml` can't open PRs before the SDK repos are ready:
 

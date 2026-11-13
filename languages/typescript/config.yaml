@@ -1,0 +1,6 @@
+# openapi-generator options for the TypeScript SDK (generator: typescript-fetch).
+supportsES6: true
+# Operations that appear under more than one tag would otherwise export the same
+# request interface twice and fail tsc; prefixing with the API class name avoids it.
+prefixParameterInterfaces: true
+npmName: "@p2-inc/js-sdk"

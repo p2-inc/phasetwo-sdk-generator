@@ -1,0 +1,167 @@
+# Regenerate the SDKs and open (or update) a PR in each SDK repo.
+#
+# Triggers:
+#   - repository_dispatch "openapi-updated" from phasetwo-docs when openapi.yaml
+#     changes on main (see other-repos/phasetwo-docs/openapi-sdks.yml)
+#   - a push to main here that changes generation inputs (overlays, templates,
+#     configs, patches, scripts, pinned versions)
+#   - weekly, in case a dispatch was missed
+#   - manually, optionally for one language or a specific spec ref
+#
+# Needs a GitHub App installed on the SDK repos with contents + pull-requests write:
+#   vars.SDK_BOT_APP_ID, secrets.SDK_BOT_PRIVATE_KEY
+name: regenerate
+
+on:
+  repository_dispatch:
+    types: [openapi-updated]
+  push:
+    branches: [main]
+    paths:
+      - overlays/**
+      - languages/**
+      - scripts/**
+      - versions.env
+      - sdks.env
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      language:
+        description: "java, typescript, python, or all"
+        default: all
+      spec_ref:
+        description: "phasetwo-docs commit or branch (default: main)"
+        default: ""
+
+concurrency:
+  group: regenerate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java
+            repo: phasetwo-java
+          - language: typescript
+            repo: phasetwo-js
+          - language: python
+            repo: phasetwo-python
+    env:
+      BRANCH: bot/openapi-update
+      # A dispatch carries the spec commit; otherwise use the input or main.
+      SPEC_REF: ${{ github.event.client_payload.sha || inputs.spec_ref || '' }}
+    steps:
+      - name: Skip languages not requested
+        id: wanted
+        run: |
+          want="${{ inputs.language || 'all' }}"
+          if [ "$want" = all ] || [ "$want" = "${{ matrix.language }}" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.wanted.outputs.run
+
+      - uses: actions/create-github-app-token@v3
+        if: steps.wanted.outputs.run
+        id: token
+        with:
+          app-id: ${{ vars.SDK_BOT_APP_ID }}
+          private-key: ${{ secrets.SDK_BOT_PRIVATE_KEY }}
+          owner: p2-inc
+          repositories: ${{ matrix.repo }}
+
+      # Never overwrite a person's fixes. create-pull-request resets the bot branch,
+      # so if someone has pushed to it (e.g. to fix a hand-written wrapper), leave it
+      # alone and say so on the PR instead.
+      - name: Check for human commits on the bot branch
+        if: steps.wanted.outputs.run
+        id: guard
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          REPO: p2-inc/${{ matrix.repo }}
+        run: |
+          if ! gh api "repos/$REPO/branches/$BRANCH" --silent 2>/dev/null; then
+            exit 0
+          fi
+          base=$(gh api "repos/$REPO" --jq .default_branch)
+          humans=$(gh api "repos/$REPO/compare/$base...$BRANCH" \
+            --jq '[.commits[] | select((.author.type // "User") != "Bot")] | length')
+          if [ "$humans" != 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            pr=$(gh pr list -R "$REPO" --head "$BRANCH" --json number --jq '.[0].number')
+            msg="Not regenerating from \`${SPEC_REF:-main}\`: this branch has commits from people. Merge or close this PR, then re-run [regenerate]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/regenerate.yml)."
+            [ -n "$pr" ] && gh pr comment "$pr" -R "$REPO" --body "$msg"
+            echo "::warning::$msg"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+        with:
+          repository: p2-inc/${{ matrix.repo }}
+          token: ${{ steps.token.outputs.token }}
+          path: .work/sdks/${{ matrix.language }}
+
+      - uses: actions/setup-java@v6
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-node@v7
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@v10
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+
+      - name: Generate
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+        run: scripts/generate.sh ${{ matrix.language }} .work/sdks/${{ matrix.language }}
+
+      - name: Describe spec changes
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+        id: diff
+        run: |
+          scripts/spec-diff.sh .work/sdks/${{ matrix.language }} .work/pr
+          . .work/spec/source.env
+          {
+            echo "semver=$(cat .work/pr/semver)"
+            echo "spec_sha=$SPEC_SHA"
+            echo "spec_short=${SPEC_SHA:0:7}"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "Regenerated by [phasetwo-sdk-generator]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) from [p2-inc/phasetwo-docs@${SPEC_SHA:0:7}](https://github.com/p2-inc/phasetwo-docs/commit/$SPEC_SHA) with openapi-generator $(grep '^OPENAPI_GENERATOR_VERSION=' versions.env | cut -d= -f2)."
+            echo
+            echo "Suggested version bump: **$(cat .work/pr/semver)** (from the label; breaking spec changes and removed tags count as minor while we're on 0.x)."
+            echo
+            echo "If CI fails here, the hand-written code needs updating for the new generated code. Push fixes to this branch; the bot won't overwrite a branch that has human commits."
+            echo
+            echo "<details><summary>Spec changelog</summary>"
+            echo
+            cat .work/pr/changelog.md
+            echo
+            echo "</details>"
+          } > .work/pr/body.md
+
+      - uses: peter-evans/create-pull-request@v8
+        if: steps.wanted.outputs.run && !steps.guard.outputs.skip
+        with:
+          path: .work/sdks/${{ matrix.language }}
+          token: ${{ steps.token.outputs.token }}
+          branch: ${{ env.BRANCH }}
+          sign-commits: true
+          commit-message: "chore: regenerate from phasetwo-docs@${{ steps.diff.outputs.spec_short }}"
+          title: "Regenerate from phasetwo-docs@${{ steps.diff.outputs.spec_short }}"
+          body-path: .work/pr/body.md
+          labels: |
+            openapi
+            semver:${{ steps.diff.outputs.semver }}
+          delete-branch: true

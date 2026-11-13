@@ -1,0 +1,54 @@
+# Java-only overlay (OpenAPI Overlay 1.0). Applied after overlays/common.yaml.
+overlay: 1.0.0
+info:
+  title: Phase Two SDK overlay (Java)
+  version: 1.0.0
+actions:
+  # x-p2-return-response makes the generated JAX-RS interface method return
+  # jakarta.ws.rs.core.Response instead of void/the body type (see
+  # templates/apiInterface.mustache). Used where callers need the status code or the
+  # Location header, e.g. to get the id of something they just created. These used to
+  # be hand edits after every regeneration.
+  - target: $.paths['/{realm}/orgs'].post
+    description: createOrganization (Location header)
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/me/invitations/{invitationId}'].post
+    description: acceptInvitation
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/config'].put
+    description: updateOrganizationConfig
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/{orgId}/domains/{domainName}/verify'].post
+    description: verifyDomain
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/{orgId}/members/{userId}'].get
+    description: checkOrganizationMembership (204 vs 404)
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/{orgId}/invitations'].post
+    description: addOrganizationInvitation (Location header)
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/{orgId}/roles'].post
+    description: createOrganizationRole (Location header)
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/{orgId}/roles/{name}/users/{userId}'].get
+    description: checkUserOrganizationRole (204 vs 404)
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/{orgId}/idps'].post
+    description: createIdp (Location header)
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/{orgId}/idps/link'].post
+    description: linkIdp (Location header)
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/orgs/{orgId}/idps/{alias}/mappers'].post
+    description: addIdpMapper (Location header)
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/users/switch-organization'].put
+    description: switchActiveOrganization
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/events'].post
+    description: createEvent
+    update: { x-p2-return-response: true }
+  - target: $.paths['/{realm}/webhooks'].post
+    description: createWebhook (Location header)
+    update: { x-p2-return-response: true }
+

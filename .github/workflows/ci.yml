@@ -1,0 +1,58 @@
+# For changes to the generator itself: regenerate every SDK from the current spec on
+# top of its default branch and build/test it, so a template, overlay or version bump
+# that breaks an SDK fails here before it reaches the SDK repos.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: shellcheck
+        run: shellcheck -x scripts/*.sh languages/*/hooks.sh
+      - name: actionlint
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+          ./actionlint -color
+
+  sdk:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java
+            repo: phasetwo-java
+          - language: typescript
+            repo: phasetwo-js
+          - language: python
+            repo: phasetwo-python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: p2-inc/${{ matrix.repo }}
+          path: .work/sdks/${{ matrix.language }}
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@v10
+      - name: Generate
+        run: scripts/generate.sh ${{ matrix.language }} .work/sdks/${{ matrix.language }}
+      - name: Show what changed in the SDK
+        run: git -C .work/sdks/${{ matrix.language }} status --short | head -100
+      - name: Build and test
+        run: scripts/build.sh ${{ matrix.language }} .work/sdks/${{ matrix.language }}

@@ -1,0 +1,13 @@
+# openapi-generator options for the Java SDK (generator: jaxrs-spec).
+# The SDK uses these interfaces as RESTEasy client proxies via the Keycloak admin
+# client, so only interfaces and models are generated; no client runtime.
+groupId: io.phasetwo
+artifactId: phasetwo-admin-client
+apiPackage: io.phasetwo.client.openapi.api
+modelPackage: io.phasetwo.client.openapi.model
+interfaceOnly: true
+useTags: true
+useJakartaEe: true
+useSwaggerAnnotations: false
+useBeanValidation: false
+hideGenerationTimestamp: true

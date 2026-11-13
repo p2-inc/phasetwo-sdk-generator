@@ -1,0 +1,6 @@
+# openapi-generator options for the Python SDK (generator: python, pydantic v2).
+# Generated code goes in the phasetwo.openapi subpackage (like Java's
+# io.phasetwo.client.openapi); phasetwo/__init__.py and pyproject.toml are hand-written.
+packageName: phasetwo.openapi
+projectName: phasetwo-sdk
+httpUserAgent: phasetwo-python

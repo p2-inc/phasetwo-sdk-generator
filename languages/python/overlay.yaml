@@ -1,0 +1,14 @@
+# Python-only overlay (OpenAPI Overlay 1.0). Applied after overlays/common.yaml.
+overlay: 1.0.0
+info:
+  title: Phase Two SDK overlay (Python)
+  version: 1.0.0
+actions:
+  # Default base URL for clients that take a full base path. Phase Two serves Keycloak
+  # under /auth, which the spec's server default omits (the JS SDK used to hand-edit
+  # BASE_PATH for this). Not in overlays/common.yaml because the Java SDK derives its
+  # path suffix (RestResourceRoot.APPLICATION_PATH) from this URL and appends it to the
+  # Keycloak server URL, which already ends in /auth.
+  - target: $.servers[0].variables.baseUrl
+    update:
+      default: https://app.phasetwo.io/auth

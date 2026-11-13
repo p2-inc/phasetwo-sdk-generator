@@ -1,0 +1,5 @@
+# Scratch area: spec downloads, generator output, SDK checkouts, downloaded tools
+.work/
+node_modules/
+.DS_Store
+*~

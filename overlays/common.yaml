@@ -1,0 +1,32 @@
+# Overlay applied to the spec for every SDK (OpenAPI Overlay 1.0).
+#
+# Only add things here that are wrong or missing in the spec itself and are waiting
+# on an upstream fix in p2-inc/phasetwo-docs. Each action says what to fix upstream;
+# delete the action once that fix has merged. SDK-only choices belong in
+# languages/<lang>/overlay.yaml instead.
+overlay: 1.0.0
+info:
+  title: Phase Two SDK overlay (all languages)
+  version: 1.0.0
+actions:
+  # UPSTREAM: these four operations have no operationId, so the generator invents
+  # names like realmUsersUserIdOrgsOrgIdRolesPut.
+  - target: $.paths['/{realm}/users/{userId}/orgs'].get
+    update:
+      operationId: listUserOrganizations
+  - target: $.paths['/{realm}/users/{userId}/orgs/{orgId}/roles'].get
+    update:
+      operationId: listUserRolesInOrganization
+  - target: $.paths['/{realm}/users/{userId}/orgs/{orgId}/roles'].put
+    update:
+      operationId: grantUserRolesInOrganization
+  - target: $.paths['/{realm}/users/{userId}/orgs/{orgId}/roles'].patch
+    update:
+      operationId: revokeUserRolesInOrganization
+
+  # GENERATOR BUG (7.27, jaxrs-spec and typescript-fetch): the inline schema for the
+  # multipart variant of /orgs/import is imported as ImportOrganizationsRequest but
+  # never generated, so the build fails. The SDKs send JSON, so drop the multipart
+  # variant. Remove this once openapi-generator fixes it (check on each upgrade).
+  - target: $.paths['/{realm}/orgs/import'].post.requestBody.content['multipart/form-data']
+    remove: true

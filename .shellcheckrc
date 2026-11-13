@@ -1,0 +1,4 @@
+shell=bash
+external-sources=true
+# Scripts source lib.sh / env files via computed paths.
+disable=SC1091
